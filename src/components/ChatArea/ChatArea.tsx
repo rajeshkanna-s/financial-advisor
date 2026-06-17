@@ -51,43 +51,55 @@ export default function ChatArea({
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Voice input is not supported in this browser. Try Chrome or Edge.');
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
+      alert('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.');
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognitionRef.current = recognition;
+    try {
+      const recognition = new SpeechRecognitionAPI();
+      recognition.lang = 'en-IN';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognitionRef.current = recognition;
 
-    let finalTranscript = input;
+      let finalTranscript = input;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += (finalTranscript ? ' ' : '') + transcript;
-        } else {
-          interim = transcript;
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += (finalTranscript ? ' ' : '') + transcript;
+          } else {
+            interim = transcript;
+          }
         }
-      }
-      setInput(finalTranscript + (interim ? ' ' + interim : ''));
-    };
+        setInput(finalTranscript + (interim ? ' ' + interim : ''));
+      };
 
-    recognition.onerror = () => {
-      setIsListening(false);
-    };
+      recognition.onerror = (event: Event & { error?: string }) => {
+        setIsListening(false);
+        const err = event.error || 'unknown';
+        if (err === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone permission in your browser settings.');
+        } else if (err === 'no-speech') {
+          // Silent — user just didn't speak
+        } else if (err !== 'aborted') {
+          alert('Voice input error: ' + err);
+        }
+      };
 
-    recognition.onend = () => {
-      setIsListening(false);
-    };
+      recognition.onend = () => {
+        setIsListening(false);
+      };
 
-    recognition.start();
-    setIsListening(true);
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      alert('Could not start voice input. Please check microphone permissions.');
+    }
   }
 
   const currentCategory = categories.find((c: Category) => c.id === chat?.category);
