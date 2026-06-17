@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { BsSend, BsStopCircle, BsList, BsArrowDown } from 'react-icons/bs';
+import { BsSend, BsStopCircle, BsList, BsArrowDown, BsGraphUpArrow, BsMic, BsMicFill } from 'react-icons/bs';
 import type { Chat, Category } from '../../types';
 import { categories } from '../../engines';
 import MessageBubble from './MessageBubble';
@@ -38,9 +38,57 @@ export default function ChatArea({
 }: ChatAreaProps) {
   const [input, setInput] = useState('');
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  function toggleVoice() {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in this browser. Try Chrome or Edge.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    let finalTranscript = input;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += (finalTranscript ? ' ' : '') + transcript;
+        } else {
+          interim = transcript;
+        }
+      }
+      setInput(finalTranscript + (interim ? ' ' + interim : ''));
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+    setIsListening(true);
+  }
 
   const currentCategory = categories.find((c: Category) => c.id === chat?.category);
 
@@ -121,6 +169,13 @@ export default function ChatArea({
               disabled={isLoading}
             />
             <button
+              className={`mic-btn ${isListening ? 'mic-active' : ''}`}
+              onClick={toggleVoice}
+              title={isListening ? 'Stop listening' : 'Voice input'}
+            >
+              {isListening ? <BsMicFill /> : <BsMic />}
+            </button>
+            <button
               className="send-btn"
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
@@ -142,8 +197,11 @@ export default function ChatArea({
         <button className="menu-btn d-md-none" onClick={onToggleSidebar}>
           <BsList size={24} />
         </button>
+        <div className="header-brand">
+          <BsGraphUpArrow className="header-logo" />
+          <span className="header-brand-name">FinAdvisor</span>
+        </div>
         <div className="header-info">
-          <h3>{chat.title}</h3>
           <span className="header-subtitle" style={{ color: currentCategory?.color }}>
             {currentCategory?.name || 'General'} &middot; {chat.messages.length} messages
           </span>
@@ -212,6 +270,13 @@ export default function ChatArea({
             rows={1}
             disabled={isLoading}
           />
+          <button
+            className={`mic-btn ${isListening ? 'mic-active' : ''}`}
+            onClick={toggleVoice}
+            title={isListening ? 'Stop listening' : 'Voice input'}
+          >
+            {isListening ? <BsMicFill /> : <BsMic />}
+          </button>
           {isLoading ? (
             <button className="stop-btn" onClick={onStopGeneration}>
               <BsStopCircle />
