@@ -47,7 +47,6 @@ export default function Sidebar({
   isOpen, onClose,
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showCategories, setShowCategories] = useState(true);
 
   const filteredChats = searchQuery

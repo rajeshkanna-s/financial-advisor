@@ -96,7 +96,6 @@ export default function App() {
         onSendMessage={sendUserMessage}
         onStopGeneration={stopGeneration}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        onNewChat={handleNewChat}
       />
 
       {showSettings && (

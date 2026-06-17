@@ -13,7 +13,6 @@ interface ChatAreaProps {
   onSendMessage: (content: string, category?: string) => void;
   onStopGeneration: () => void;
   onToggleSidebar: () => void;
-  onNewChat: (category: string) => void;
 }
 
 function parseSuggestions(content: string): { cleanContent: string; suggestions: string[] } {
@@ -35,7 +34,7 @@ function parseSuggestions(content: string): { cleanContent: string; suggestions:
 
 export default function ChatArea({
   chat, isLoading, streamingContent, onSendMessage, onStopGeneration,
-  onToggleSidebar, onNewChat,
+  onToggleSidebar,
 }: ChatAreaProps) {
   const [input, setInput] = useState('');
   const [showScrollBtn, setShowScrollBtn] = useState(false);
