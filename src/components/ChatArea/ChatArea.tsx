@@ -197,11 +197,11 @@ export default function ChatArea({
         <button className="menu-btn d-md-none" onClick={onToggleSidebar}>
           <BsList size={24} />
         </button>
-        <div className="header-brand">
-          <BsGraphUpArrow className="header-logo" />
-          <span className="header-brand-name">FinAdvisor</span>
-        </div>
-        <div className="header-info">
+        <div className="header-content">
+          <div className="header-brand">
+            <BsGraphUpArrow className="header-logo" />
+            <span className="header-brand-name">FinAdvisor</span>
+          </div>
           <span className="header-subtitle" style={{ color: currentCategory?.color }}>
             {currentCategory?.name || 'General'} &middot; {chat.messages.length} messages
           </span>
