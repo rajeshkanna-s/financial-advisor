@@ -1,4 +1,1 @@
-/api/freemodel/*  https://api.freemodel.dev/:splat  200
-/api/openai/*  https://api.openai.com/:splat  200
-/api/gemini/*  https://generativelanguage.googleapis.com/:splat  200
 /*  /index.html  200
