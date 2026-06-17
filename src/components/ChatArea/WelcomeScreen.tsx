@@ -6,12 +6,12 @@ interface WelcomeScreenProps {
 }
 
 const suggestedQuestions = [
-  { text: 'How should I start investing with ₹5,000/month?', category: 'investment-management' },
-  { text: 'What is the 50/30/20 budgeting rule?', category: 'financial-planning' },
-  { text: 'PPF vs NPS — which is better for retirement?', category: 'retirement-planning' },
-  { text: 'How can I save more on taxes this year?', category: 'tax-planning' },
-  { text: 'How much life insurance coverage do I need?', category: 'insurance-risk' },
-  { text: 'What are the best books on personal finance?', category: 'books-resources' },
+  { text: 'Build me a complete financial plan for a ₹10 LPA salary', category: 'financial-planning' },
+  { text: 'Compare SIP vs Lump Sum — which builds more wealth?', category: 'investment-management' },
+  { text: 'How to save ₹5 Lakh+ in taxes using Section 80C, 80D & HRA?', category: 'tax-planning' },
+  { text: 'What is the right retirement corpus I need to retire at 50?', category: 'retirement-planning' },
+  { text: 'Explain stock valuation — P/E ratio, DCF & fundamental analysis', category: 'accounting-corporate' },
+  { text: 'Term insurance vs Whole life — which one should I buy?', category: 'insurance-risk' },
 ];
 
 export default function WelcomeScreen({ onSendMessage }: WelcomeScreenProps) {
