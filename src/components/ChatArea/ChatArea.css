@@ -521,4 +521,10 @@
     font-size: 0.8rem;
     padding: 8px 12px;
   }
+
+  .mic-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.25rem;
+  }
 }

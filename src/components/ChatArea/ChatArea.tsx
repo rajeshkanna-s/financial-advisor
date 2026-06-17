@@ -44,7 +44,7 @@ export default function ChatArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  function toggleVoice() {
+  async function toggleVoice() {
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
@@ -53,41 +53,43 @@ export default function ChatArea({
 
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
-      alert('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      alert('Voice input is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    // Pre-request microphone permission — mobile browsers need this explicit step
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch {
+      alert('Microphone access denied. Please allow microphone permission in browser settings and try again.');
       return;
     }
 
     try {
       const recognition = new SpeechRecognitionAPI();
       recognition.lang = 'en-IN';
-      recognition.interimResults = true;
+      recognition.interimResults = false;
       recognition.continuous = false;
       recognitionRef.current = recognition;
 
-      let finalTranscript = input;
-
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += (finalTranscript ? ' ' : '') + transcript;
-          } else {
-            interim = transcript;
-          }
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
-        setInput(finalTranscript + (interim ? ' ' + interim : ''));
+        if (transcript) {
+          setInput(prev => (prev ? prev + ' ' : '') + transcript);
+        }
       };
 
       recognition.onerror = (event: Event & { error?: string }) => {
         setIsListening(false);
         const err = event.error || 'unknown';
         if (err === 'not-allowed') {
-          alert('Microphone access denied. Please allow microphone permission in your browser settings.');
-        } else if (err === 'no-speech') {
-          // Silent — user just didn't speak
-        } else if (err !== 'aborted') {
-          alert('Voice input error: ' + err);
+          alert('Microphone permission denied.');
+        } else if (err !== 'no-speech' && err !== 'aborted') {
+          alert('Voice error: ' + err);
         }
       };
 
@@ -97,8 +99,8 @@ export default function ChatArea({
 
       recognition.start();
       setIsListening(true);
-    } catch {
-      alert('Could not start voice input. Please check microphone permissions.');
+    } catch (e) {
+      alert('Voice input failed: ' + (e instanceof Error ? e.message : 'Unknown error'));
     }
   }
 
