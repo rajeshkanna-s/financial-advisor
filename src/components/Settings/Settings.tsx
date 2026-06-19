@@ -29,6 +29,7 @@ export default function Settings({ settings, onSave, onClose }: SettingsProps) {
       case 'freemodel': return 'Pre-configured — FreeModel API key';
       case 'gemini': return 'Enter Google Gemini API key...';
       case 'openai': return 'Enter OpenAI API key (sk-...)';
+      case 'claude': return 'Enter Anthropic API key (sk-ant-...)';
       case 'custom': return 'Enter your API key...';
     }
   }
@@ -38,6 +39,7 @@ export default function Settings({ settings, onSave, onClose }: SettingsProps) {
       case 'freemodel': return 'FreeModel API — pre-configured and ready to use';
       case 'gemini': return 'Get a free key at Google AI Studio (aistudio.google.com/apikey)';
       case 'openai': return 'Get a key at platform.openai.com/api-keys';
+      case 'claude': return 'Get a key at console.anthropic.com/settings/keys';
       case 'custom': return 'Enter the API key for your custom OpenAI-compatible endpoint';
     }
   }
@@ -90,6 +92,16 @@ export default function Settings({ settings, onSave, onClose }: SettingsProps) {
                   OpenAI
                 </button>
                 <button
+                  className={`provider-btn ${form.apiProvider === 'claude' ? 'active' : ''}`}
+                  onClick={() => {
+                    update('apiProvider', 'claude');
+                    update('modelName', 'claude-sonnet-4-20250514');
+                    update('apiBaseUrl', '');
+                  }}
+                >
+                  Claude
+                </button>
+                <button
                   className={`provider-btn ${form.apiProvider === 'custom' ? 'active' : ''}`}
                   onClick={() => {
                     update('apiProvider', 'custom');
@@ -119,7 +131,7 @@ export default function Settings({ settings, onSave, onClose }: SettingsProps) {
               <small className="form-hint">{getApiKeyHint()}</small>
             </div>
 
-            {form.apiProvider !== 'gemini' && (
+            {form.apiProvider !== 'gemini' && form.apiProvider !== 'claude' && (
               <div className="form-group">
                 <label>API Base URL</label>
                 <input
@@ -159,6 +171,11 @@ export default function Settings({ settings, onSave, onClose }: SettingsProps) {
                       <option value="FRE-5.5">FRE-5.5 (Default)</option>
                       <option value="FRE-5.4">FRE-5.4</option>
                       <option value="FRE-5.0">FRE-5.0</option>
+                    </>
+                  ) : form.apiProvider === 'claude' ? (
+                    <>
+                      <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Balanced)</option>
+                      <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fast)</option>
                     </>
                   ) : form.apiProvider === 'gemini' ? (
                     <>

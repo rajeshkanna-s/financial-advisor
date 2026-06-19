@@ -26,6 +26,9 @@ export default async function handler(request: Request) {
   } else if (path.startsWith('/api/gemini')) {
     targetBase = 'https://generativelanguage.googleapis.com';
     stripPrefix = '/api/gemini';
+  } else if (path.startsWith('/api/anthropic')) {
+    targetBase = 'https://api.anthropic.com';
+    stripPrefix = '/api/anthropic';
   } else {
     return new Response('Not found', { status: 404 });
   }
@@ -62,5 +65,5 @@ export default async function handler(request: Request) {
 }
 
 export const config = {
-  path: ['/api/freemodel/*', '/api/openai/*', '/api/gemini/*'],
+  path: ['/api/freemodel/*', '/api/openai/*', '/api/gemini/*', '/api/anthropic/*'],
 };

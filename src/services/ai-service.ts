@@ -79,6 +79,8 @@ export async function sendMessage(
   try {
     if (settings.apiProvider === 'gemini') {
       return await callGemini(messages, settings, engineContext);
+    } else if (settings.apiProvider === 'claude') {
+      return await callClaude(messages, settings, engineContext, onStream, signal);
     } else {
       return await callOpenAICompatible(messages, settings, engineContext, onStream, signal);
     }
@@ -237,4 +239,82 @@ async function callGemini(
 
   const data = await response.json();
   return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
+}
+
+async function callClaude(
+  messages: Message[],
+  settings: AppSettings,
+  engineContext: string,
+  onStream?: StreamCallback,
+  signal?: AbortSignal,
+): Promise<string> {
+  const model = settings.modelName || 'claude-sonnet-4-20250514';
+  const url = '/api/anthropic/v1/messages';
+
+  const apiMessages = messages.map(msg => ({
+    role: msg.role as 'user' | 'assistant',
+    content: msg.content,
+  }));
+
+  const useStream = !!onStream;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': settings.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model,
+      system: `${SYSTEM_PROMPT}\n\n--- DOMAIN KNOWLEDGE ---\n${engineContext}`,
+      messages: apiMessages,
+      max_tokens: 4096,
+      stream: useStream,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Claude API error: ${response.status} ${response.statusText}`);
+  }
+
+  if (useStream && response.body) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+        const data = trimmed.slice(6);
+
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+            fullContent += parsed.delta.text;
+            onStream(fullContent);
+          }
+        } catch {
+          // skip malformed chunks
+        }
+      }
+    }
+
+    return fullContent || 'No response generated.';
+  }
+
+  const data = await response.json();
+  return data?.content?.[0]?.text || 'No response generated.';
 }

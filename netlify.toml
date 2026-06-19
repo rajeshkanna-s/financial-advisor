@@ -13,3 +13,7 @@
 [[edge_functions]]
   path = "/api/gemini/*"
   function = "api-proxy"
+
+[[edge_functions]]
+  path = "/api/anthropic/*"
+  function = "api-proxy"
