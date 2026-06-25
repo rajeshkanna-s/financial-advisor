@@ -92,7 +92,7 @@ export async function sendMessage(
     // Fallback to free Supabase AI API if primary provider fails
     if (settings.apiProvider === 'freemodel') {
       try {
-        return await callFallbackAI(messages, engineContext, signal);
+        return await callFallbackAI(messages, engineContext, onStream, signal);
       } catch {
         // Fallback also failed, show original error
       }
@@ -340,6 +340,7 @@ const FALLBACK_PROVIDERS = [
 async function callFallbackAI(
   messages: Message[],
   engineContext: string,
+  onStream?: StreamCallback,
   signal?: AbortSignal,
 ): Promise<string> {
   const prompt = `${SYSTEM_PROMPT}\n\n--- DOMAIN KNOWLEDGE ---\n${engineContext}\n\n--- CONVERSATION ---\n${messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')}\n\nAssistant:`;
@@ -371,11 +372,27 @@ async function callFallbackAI(
 
       const data = await response.json();
       const text = data?.content || data?.text || data?.response || data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text;
-      if (text) return text;
+      if (text) {
+        if (onStream) {
+          await simulateStream(text, onStream, signal);
+        }
+        return text;
+      }
     } catch {
       continue;
     }
   }
 
   throw new Error('All fallback providers failed');
+}
+
+async function simulateStream(text: string, onStream: StreamCallback, signal?: AbortSignal) {
+  let output = '';
+  const words = text.split(/(\s+)/);
+  for (const word of words) {
+    if (signal?.aborted) break;
+    output += word;
+    onStream(output);
+    await new Promise(r => setTimeout(r, 15));
+  }
 }
