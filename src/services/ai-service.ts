@@ -88,6 +88,16 @@ export async function sendMessage(
     if (error.name === 'AbortError') {
       throw error;
     }
+
+    // Fallback to free Supabase AI API if primary provider fails
+    if (settings.apiProvider === 'freemodel') {
+      try {
+        return await callFallbackAI(messages, engineContext, signal);
+      } catch {
+        // Fallback also failed, show original error
+      }
+    }
+
     if (error.message?.includes('API key') || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
       return '❌ **Invalid API Key**\n\nPlease check your API key in Settings. Make sure you\'ve copied the entire key correctly.';
     }
@@ -317,4 +327,55 @@ async function callClaude(
 
   const data = await response.json();
   return data?.content?.[0]?.text || 'No response generated.';
+}
+
+const FALLBACK_API_URL = 'https://wuvgoqjxvnbihwiijzfb.supabase.co/functions/v1/ai-chat';
+const FALLBACK_API_KEY = 'sb_publishable_XwfSIwlW4c35Ejv4nwG6Dg_LkXaK4Z_';
+
+const FALLBACK_PROVIDERS = [
+  { provider: 'nvidia', modelId: 'a34c3d62-5e7d-4504-a009-b689575bdb37', tokenSlotId: 'b8ee59ec-62ed-42fb-b77a-09654020b8b3' },
+  { provider: 'openrouter', modelId: 'eecca7be-5693-4be4-860c-48055729aeb0', tokenSlotId: '877fbe3c-eb52-4b9a-a386-ef97a78eb77c' },
+];
+
+async function callFallbackAI(
+  messages: Message[],
+  engineContext: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const prompt = `${SYSTEM_PROMPT}\n\n--- DOMAIN KNOWLEDGE ---\n${engineContext}\n\n--- CONVERSATION ---\n${messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')}\n\nAssistant:`;
+
+  for (const config of FALLBACK_PROVIDERS) {
+    try {
+      const response = await fetch(FALLBACK_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': FALLBACK_API_KEY,
+          'Authorization': `Bearer ${FALLBACK_API_KEY}`,
+        },
+        body: JSON.stringify({
+          provider: config.provider,
+          modelId: config.modelId,
+          tokenSlotId: config.tokenSlotId,
+          prompt,
+          temperature: 0.7,
+          top_p: 0.9,
+          max_tokens: 4096,
+          attempt_timeout_ms: 30000,
+          stream: false,
+        }),
+        signal,
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const text = data?.content || data?.text || data?.response || data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text;
+      if (text) return text;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error('All fallback providers failed');
 }
