@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import ChatArea from './components/ChatArea/ChatArea';
 import Settings from './components/Settings/Settings';
+import PWAPrompt from './components/PWA/PWAPrompt';
 import { useChat } from './hooks/useChat';
 import { loadSettings, saveSettings, exportToFile, importFromFile } from './services/storage-service';
 import type { AppSettings } from './types';
@@ -105,6 +106,8 @@ export default function App() {
           onClose={() => setShowSettings(false)}
         />
       )}
+
+      <PWAPrompt />
     </div>
   );
 }
